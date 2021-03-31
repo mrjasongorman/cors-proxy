@@ -1,5 +1,5 @@
 blacklist = [ ]; // blacklisted origins
-whitelist = [ "http://localhost:8080", "https://myfeedrss.netlify.app" ]; // whitelisted origins
+whitelist = [ "http://localhost:8080", "https://myfeedrss.jasongorman.uk" ]; // whitelisted origins
 
 const isListed = (uri, listing) => {
     let result = false;
