@@ -38,22 +38,38 @@ addEventListener("fetch", async event => {
                 }
 
                 // Fetch and add CORS header
-                const response = await fetch(fetch_url);
-                let myHeaders = new Headers(response.headers);
-                myHeaders.set("Access-Control-Allow-Origin", fetchOrigin);
+                const fetchPromise = fetch(fetch_url);
+                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1500));
 
-                const body = await response.arrayBuffer();
+                // Race against the timeout
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
 
-                const newHeaders = {
-                    headers: myHeaders,
-                    status: response.status,
-                    statusText: response.statusText
-                };
+                if(response){
+                    let myHeaders = new Headers(response.headers);
+                    myHeaders.set("Access-Control-Allow-Origin", fetchOrigin);
 
-                return new Response(body, newHeaders);
+                    const body = await response.arrayBuffer();
 
+                    const newHeaders = {
+                        headers: myHeaders,
+                        status: response.status,
+                        statusText: response.statusText
+                    };
+
+                    return new Response(body, newHeaders);
+                } else {
+                    return new Response(
+                        "Gateway Timeout",
+                        {
+                            status: 504,
+                            statusText: 'Gateway Timeout',
+                            headers: {
+                                "Content-Type": "text/plain"
+                            }
+                        }
+                    );
+                }
             } else {
-
                 return new Response(
                     "Forbidden",
                     {
@@ -64,8 +80,6 @@ addEventListener("fetch", async event => {
                         }
                     }
                 );
-
             }
         })());
-
 });
