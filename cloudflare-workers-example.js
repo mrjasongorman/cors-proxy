@@ -1,5 +1,5 @@
 blacklist = [ ]; // blacklisted origins
-whitelist = [ "http://localhost:8080", "https://myfeed.jasongorman.uk" ]; // whitelisted origins
+whitelist = [ "http://localhost:8080", "https://myfeedrss.netlify.app", "https://myfeed.jasongorman.uk" ]; // whitelisted origins
 
 const isListed = (uri, listing) => {
     let result = false;
@@ -38,8 +38,10 @@ addEventListener("fetch", async event => {
                 }
 
                 // Fetch and add CORS header
-                const fetchPromise = fetch(fetch_url);
-                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1500));
+                const fetchPromise = fetch(fetch_url, {
+                    'User-Agent': 'Mozilla/5.0 myfeed.jasongorman.uk MyFeedRSS/1.0'
+                });
+                const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1300));
 
                 // Race against the timeout
                 const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -47,6 +49,19 @@ addEventListener("fetch", async event => {
                 if(response){
                     let myHeaders = new Headers(response.headers);
                     myHeaders.set("Access-Control-Allow-Origin", fetchOrigin);
+			
+		    // clean response type so Cloudflare can send back compressed
+                    if( 
+                        response.headers.get('content-type').includes('application/rss+xml') || 
+                        response.headers.get('content-type').includes('application/atom+xml') || 
+                        response.headers.get('content-type').includes('charset')
+                    ){
+                        myHeaders.set('content-type', 'application/xml+rss');
+                    }
+
+                    if(!response.headers.has('server')) {
+                        myHeaders.set('server', 'unknown');
+                    }
 
                     const body = await response.arrayBuffer();
 
