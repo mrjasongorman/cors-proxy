@@ -41,6 +41,10 @@ async function proxyHandler(request) {
             );
         }
 
+
+        // Create stream to send back data
+        let { readable, writable } = new TransformStream();
+
         // Fetch and add CORS header
         const fetchPromise = fetch(fetch_url, {
             'User-Agent': 'Mozilla/5.0 myfeed.jasongorman.uk MyFeedRSS/1.0'
@@ -73,7 +77,8 @@ async function proxyHandler(request) {
                 myHeaders.set('cache-control', newCacheControl);
             }
 
-            const body = await response.arrayBuffer();
+            // stream response body
+            response.body.pipeTo(writable);
 
             const newHeaders = {
                 headers: myHeaders,
@@ -81,7 +86,7 @@ async function proxyHandler(request) {
                 statusText: response.statusText
             };
 
-            return new Response(body, newHeaders);
+            return new Response(readable, newHeaders);
         
         } else {
             return new Response(
@@ -108,4 +113,6 @@ async function proxyHandler(request) {
             }
         );
     }
+
 }
+
